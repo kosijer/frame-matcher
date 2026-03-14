@@ -54,8 +54,8 @@ export function FrameControls() {
 
   const [unitConverterOpen, setUnitConverterOpen] = useState(false);
 
-  const containerWidth = matEnabled ? matOpeningWidth : frameWidth - 2 * frameThickness;
-  const containerHeight = matEnabled ? matOpeningHeight : frameHeight - 2 * frameThickness;
+  const containerWidth = matEnabled ? matOpeningWidth : frameWidth;
+  const containerHeight = matEnabled ? matOpeningHeight : frameHeight;
   const maxImageCount = Math.max(
     1,
     Math.min(
@@ -64,11 +64,7 @@ export function FrameControls() {
         Math.floor(containerHeight / defaultImageHeight)
     )
   );
-  const maxThickness = Math.min(
-    MAX_FRAME_THICKNESS,
-    (frameWidth - 20) / 2,
-    (frameHeight - 20) / 2
-  );
+  const maxThickness = MAX_FRAME_THICKNESS;
   const showVerticalAlignment = (gridResult?.rows ?? 0) > 1;
 
   const inputClass =
@@ -98,13 +94,13 @@ export function FrameControls() {
         <section className="space-y-3">
           <div className={sectionTitleClass}>
             Frame
-            <HelpTooltip content="Outer dimensions and border thickness of the physical frame. Use the rotate icon to switch portrait/landscape." />
+            <HelpTooltip content="Opening is the visible inner size; the frame border extends outward by the thickness. Use the rotate icon to switch portrait/landscape." />
           </div>
         <SizeSelector />
         <div className="flex items-end gap-2">
           <div className="grid flex-1 grid-cols-2 gap-2">
             <div>
-              <label className={labelClass}>Width (mm)</label>
+              <label className={labelClass}>Opening width (mm)</label>
               <input
                 type="number"
                 value={frameWidth}
@@ -114,7 +110,7 @@ export function FrameControls() {
               />
             </div>
             <div>
-              <label className={labelClass}>Height (mm)</label>
+              <label className={labelClass}>Opening height (mm)</label>
               <input
                 type="number"
                 value={frameHeight}
@@ -124,7 +120,7 @@ export function FrameControls() {
               />
             </div>
           </div>
-          <button type="button" onClick={rotateLayout} title="Swap frame and mat (portrait / landscape)" className={iconBtnClass}>
+          <button type="button" onClick={rotateLayout} title="Swap opening and mat (portrait / landscape)" className={iconBtnClass}>
             <RotateCw className="h-4 w-4" />
           </button>
         </div>

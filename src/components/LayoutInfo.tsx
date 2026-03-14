@@ -3,6 +3,7 @@ import { useFrameStore } from '../store/useFrameStore';
 export function LayoutInfo() {
   const frameWidth = useFrameStore((s) => s.frameWidth);
   const frameHeight = useFrameStore((s) => s.frameHeight);
+  const frameThickness = useFrameStore((s) => s.frameThickness);
   const matEnabled = useFrameStore((s) => s.matEnabled);
   const matOpeningWidth = useFrameStore((s) => s.matOpeningWidth);
   const matOpeningHeight = useFrameStore((s) => s.matOpeningHeight);
@@ -11,12 +12,16 @@ export function LayoutInfo() {
   if (!gridResult) return null;
 
   const { rows, columns, imageWidth, imageHeight, spacingH, spacingV } = gridResult;
+  const outerW = frameWidth + 2 * frameThickness;
+  const outerH = frameHeight + 2 * frameThickness;
 
   return (
     <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm shadow-sm">
       <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-muted-foreground">
-        <span className="font-medium text-foreground">Frame</span>
+        <span className="font-medium text-foreground">Opening</span>
         <span>{frameWidth} × {frameHeight} mm</span>
+        <span className="font-medium text-foreground">Outer frame</span>
+        <span>{outerW} × {outerH} mm</span>
         {matEnabled && (
           <>
             <span className="font-medium text-foreground">Mat</span>

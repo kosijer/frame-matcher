@@ -96,9 +96,7 @@ export const useFrameStore = create<FrameState & FrameActions>((set, get) => ({
   containerSize: { width: 0, height: 0 },
 
   setFrameThickness: (v) => {
-    const s = get();
-    const maxThick = Math.min(80, (s.frameWidth - 20) / 2, (s.frameHeight - 20) / 2);
-    set({ frameThickness: Math.max(1, Math.min(maxThick, v)) });
+    set({ frameThickness: Math.max(1, Math.min(80, v)) });
     get().clampImageCountToFit();
     get().recalcLayout();
   },
@@ -128,8 +126,8 @@ export const useFrameStore = create<FrameState & FrameActions>((set, get) => ({
   },
   setImageCount: (n) => {
     const s = get();
-    const containerWidth = s.matEnabled ? s.matOpeningWidth : s.frameWidth - 2 * s.frameThickness;
-    const containerHeight = s.matEnabled ? s.matOpeningHeight : s.frameHeight - 2 * s.frameThickness;
+    const containerWidth = s.matEnabled ? s.matOpeningWidth : s.frameWidth;
+    const containerHeight = s.matEnabled ? s.matOpeningHeight : s.frameHeight;
     const maxFit =
       Math.floor(containerWidth / s.defaultImageWidth) *
       Math.floor(containerHeight / s.defaultImageHeight);
@@ -217,8 +215,8 @@ export const useFrameStore = create<FrameState & FrameActions>((set, get) => ({
   },
   clampImageCountToFit: () => {
     const s = get();
-    const containerWidth = s.matEnabled ? s.matOpeningWidth : s.frameWidth - 2 * s.frameThickness;
-    const containerHeight = s.matEnabled ? s.matOpeningHeight : s.frameHeight - 2 * s.frameThickness;
+    const containerWidth = s.matEnabled ? s.matOpeningWidth : s.frameWidth;
+    const containerHeight = s.matEnabled ? s.matOpeningHeight : s.frameHeight;
     const maxFit =
       Math.floor(containerWidth / s.defaultImageWidth) *
       Math.floor(containerHeight / s.defaultImageHeight);
@@ -232,8 +230,8 @@ export const useFrameStore = create<FrameState & FrameActions>((set, get) => ({
   },
   recalcLayout: () => {
     const s = get();
-    const containerWidth = s.matEnabled ? s.matOpeningWidth : s.frameWidth - 2 * s.frameThickness;
-    const containerHeight = s.matEnabled ? s.matOpeningHeight : s.frameHeight - 2 * s.frameThickness;
+    const containerWidth = s.matEnabled ? s.matOpeningWidth : s.frameWidth;
+    const containerHeight = s.matEnabled ? s.matOpeningHeight : s.frameHeight;
     const result = computeGridLayout(
       s.imageCount,
       containerWidth,

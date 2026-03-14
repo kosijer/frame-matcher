@@ -14,16 +14,18 @@ export function FramePreview() {
   const frameColor = useFrameStore((s) => s.frameColor);
   const matColor = useFrameStore((s) => s.matColor);
 
+  const outerW = frameWidth + 2 * frameThickness;
+  const outerH = frameHeight + 2 * frameThickness;
   const scale = useMemo(() => {
-    const maxDim = Math.max(frameWidth, frameHeight);
+    const maxDim = Math.max(outerW, outerH);
     return maxDim > 0 ? PREVIEW_MAX / maxDim : 1;
-  }, [frameWidth, frameHeight]);
+  }, [outerW, outerH]);
 
-  const frameW = frameWidth * scale;
-  const frameH = frameHeight * scale;
+  const frameW = outerW * scale;
+  const frameH = outerH * scale;
   const thick = frameThickness * scale;
-  const innerW = frameW - 2 * thick;
-  const innerH = frameH - 2 * thick;
+  const innerW = frameWidth * scale;
+  const innerH = frameHeight * scale;
 
   const matW = matEnabled ? matOpeningWidth * scale : innerW;
   const matH = matEnabled ? matOpeningHeight * scale : innerH;
@@ -70,8 +72,8 @@ export function FramePreview() {
           {!matEnabled && (
             <div className="flex h-full w-full items-center justify-center">
               <ImageGrid
-                containerWidthMm={frameWidth - 2 * frameThickness}
-                containerHeightMm={frameHeight - 2 * frameThickness}
+                containerWidthMm={frameWidth}
+                containerHeightMm={frameHeight}
                 scale={scale}
               />
             </div>
