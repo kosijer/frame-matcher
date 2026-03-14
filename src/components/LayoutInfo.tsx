@@ -13,23 +13,23 @@ export function LayoutInfo() {
   const { rows, columns, imageWidth, imageHeight, spacingH, spacingV } = gridResult;
 
   return (
-    <div className="mt-3 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-        <span>Frame:</span>
+    <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm shadow-sm">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-muted-foreground">
+        <span className="font-medium text-foreground">Frame</span>
         <span>{frameWidth} × {frameHeight} mm</span>
         {matEnabled && (
           <>
-            <span>Mat:</span>
+            <span className="font-medium text-foreground">Mat</span>
             <span>{matOpeningWidth} × {matOpeningHeight} mm</span>
           </>
         )}
-        <span>Images:</span>
+        <span className="font-medium text-foreground">Images</span>
         <span>{Math.round(imageWidth * 10) / 10} × {Math.round(imageHeight * 10) / 10} mm</span>
-        <span>Grid:</span>
+        <span className="font-medium text-foreground">Grid</span>
         <span>{rows} rows × {columns} columns</span>
-        <span>Spacing (H):</span>
+        <span className="font-medium text-foreground">Spacing (H)</span>
         <span>{Math.round(spacingH * 10) / 10} mm</span>
-        <span>Spacing (V):</span>
+        <span className="font-medium text-foreground">Spacing (V)</span>
         <span>{Math.round(spacingV * 10) / 10} mm</span>
       </div>
     </div>

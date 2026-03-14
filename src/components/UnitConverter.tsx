@@ -20,30 +20,27 @@ export function UnitConverter() {
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-      <h3 className="mb-2 text-sm font-semibold text-gray-800">Unit converter</h3>
-      <div className="flex flex-col gap-2">
-        <div>
-          <label className="text-xs text-gray-600">mm</label>
-          <input
-            type="number"
-            value={mm}
-            onChange={(e) => handleMmChange(e.target.value)}
-            placeholder="0"
-            className="mt-0.5 w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-gray-600">inches</label>
-          <input
-            type="number"
-            value={inches}
-            onChange={(e) => handleInchesChange(e.target.value)}
-            placeholder="0"
-            step="0.01"
-            className="mt-0.5 w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
-          />
-        </div>
+    <div className="flex flex-col gap-4">
+      <div>
+        <label className="text-sm font-medium text-foreground">mm</label>
+        <input
+          type="number"
+          value={mm}
+          onChange={(e) => handleMmChange(e.target.value)}
+          placeholder="0"
+          className="mt-1.5 w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium text-foreground">inches</label>
+        <input
+          type="number"
+          value={inches}
+          onChange={(e) => handleInchesChange(e.target.value)}
+          placeholder="0"
+          step="0.01"
+          className="mt-1.5 w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        />
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { HexColorPicker } from 'react-colorful';
 
 const PRESETS = [
@@ -23,20 +23,32 @@ interface ColorPickerProps {
 
 export function ColorPicker({ label, value, onChange }: ColorPickerProps) {
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
 
   return (
-    <div className="relative flex flex-col gap-1">
-      <label className="text-sm font-medium text-gray-700">{label}</label>
+    <div ref={containerRef} className="relative flex flex-col gap-1">
+      <label className="text-sm font-medium text-foreground">{label}</label>
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="h-8 w-12 rounded border border-gray-300 shadow-sm"
+          className="h-8 w-12 rounded-md border border-border shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           style={{ backgroundColor: value }}
           title={value}
         />
         {open && (
-          <div className="absolute z-10 mt-24 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+          <div className="absolute z-10 mt-24 rounded-lg border border-border bg-card p-2 shadow-lg">
             <HexColorPicker color={value} onChange={onChange} />
             <div className="mt-2 flex flex-wrap gap-1">
               {PRESETS.map((c) => (
@@ -44,7 +56,7 @@ export function ColorPicker({ label, value, onChange }: ColorPickerProps) {
                   key={c}
                   type="button"
                   onClick={() => { onChange(c); setOpen(false); }}
-                  className="h-5 w-5 rounded border border-gray-300"
+                  className="h-5 w-5 rounded border border-border"
                   style={{ backgroundColor: c }}
                   title={c}
                 />

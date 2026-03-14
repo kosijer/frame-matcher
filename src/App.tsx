@@ -14,19 +14,25 @@ function App() {
   }, [recalcLayout]);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="border-b border-gray-200 bg-white px-4 py-3 shadow-sm">
-        <h1 className="text-xl font-semibold text-gray-800">Frame Layout Planner</h1>
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-10 border-b border-border bg-card shadow-sm">
+        <div className="mx-auto flex h-14 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+          <h1 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+            Frame Layout Planner
+          </h1>
+        </div>
       </header>
-      <main className="flex gap-6 p-6">
-        <aside className="w-80 shrink-0">
-          <FrameControls />
-        </aside>
-        <section className="min-w-0 flex-1">
-          <FramePreview />
-          <LayoutInfo />
-          <FrameSearch />
-        </section>
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+          <aside className="w-full shrink-0 lg:w-80">
+            <FrameControls />
+          </aside>
+          <section className="min-w-0 flex-1 space-y-6">
+            <FramePreview />
+            <LayoutInfo />
+            <FrameSearch />
+          </section>
+        </div>
       </main>
       {import.meta.env.VITE_DEBUG === 'true' && <FrameSearchDebugPanel />}
     </div>

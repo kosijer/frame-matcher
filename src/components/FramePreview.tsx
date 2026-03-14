@@ -29,9 +29,9 @@ export function FramePreview() {
   const matH = matEnabled ? matOpeningHeight * scale : innerH;
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl bg-neutral-200/80 p-8 shadow-inner">
+    <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-muted/60 p-8 shadow-inner">
       <div
-        className="relative flex items-center justify-center rounded-sm shadow-lg"
+        className="relative flex items-center justify-center rounded-lg shadow-md"
         style={{
           width: frameW,
           height: frameH,
