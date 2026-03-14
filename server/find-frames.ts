@@ -81,15 +81,38 @@ export async function findFrames(
   const searchExamples =
     hasPhotoSize && !frameEqualsImage && inBetweenCm
       ? `"A3 frame", "A4 frame", "${inBetweenCm} frame", "${biggerCm} frame"`
-      : `"${cmSmall}x${cmLarge} cm frame", "${biggerCm} frame"`;
+      : (() => {
+          const standard: string | null =
+            canonicalWidth === 210 && canonicalHeight === 297 ? 'A4'
+            : canonicalWidth === 297 && canonicalHeight === 420 ? 'A3'
+            : canonicalWidth === 420 && canonicalHeight === 594 ? 'A2'
+            : canonicalWidth === 594 && canonicalHeight === 841 ? 'A1'
+            : canonicalWidth === 250 && canonicalHeight === 353 ? 'B4'
+            : canonicalWidth === 353 && canonicalHeight === 500 ? 'B3'
+            : canonicalWidth === 500 && canonicalHeight === 707 ? 'B2'
+            : canonicalWidth === 707 && canonicalHeight === 1000 ? 'B1'
+            : null;
+          return standard
+            ? `"${standard} frame", "${cmSmall}x${cmLarge} cm frame", "${biggerCm} frame"`
+            : `"${cmSmall}x${cmLarge} cm frame", "${biggerCm} frame"`;
+        })();
 
   const includeLine = hasPhotoSize
     ? `Include: 1 product frame size ${canonicalWidth}×${canonicalHeight} mm, 1 product image size ${defaultImageWidth}×${defaultImageHeight} mm${inBetweenNote}${biggerNote}.`
     : `Include: 2–3 products frame size ${canonicalWidth}×${canonicalHeight} mm${biggerNote}.`;
 
+  const imageSizeRequirement =
+    hasPhotoSize && !frameEqualsImage
+      ? ` You must include at least one frame that matches the image size (${defaultImageWidth}×${defaultImageHeight} mm)—search for "A4 frame" or "${imgSmall}x${imgLarge} cm frame" (or the equivalent for this image size) and add one result.`
+      : '';
+
   const prompt = `Find 5 picture frames on eBay UK and Amazon UK. User: frame ${targetFrameDesc}.${imageDesc}
 
-Return a JSON array of exactly 5 objects. ${includeLine} Search for each size (e.g. ${searchExamples}); copy the real product URL (e.g. https://www.ebay.co.uk/itm/264644982448). Each object: "title", "url", "reason", "widthMm", "heightMm". Reply with only the JSON array, no other text.`;
+Return a JSON array of exactly 5 objects. ${includeLine}${imageSizeRequirement} Search both eBay UK and Amazon UK; include at least one product from Amazon if you find a matching size (e.g. search "${cmSmall}x${cmLarge} cm frame" on amazon.co.uk). Search for each size (e.g. ${searchExamples}).
+
+CRITICAL – each url must be the full product page URL from the listing you found. eBay: copy the full URL (e.g. https://www.ebay.co.uk/itm/123456789012 — use the real 8–12 digit id from that listing, not 123456789012). Amazon: copy the full URL (https://www.amazon.co.uk/dp/ASIN or /gp/product/...). Do not use redirect URLs (vertexaisearch, grounding-api-redirect, google.com). Every url must be a different real listing.
+
+Each object: "title", "url", "reason", "widthMm", "heightMm". Reply with only the JSON array, no other text.`;
 
   const body = {
     contents: [{ parts: [{ text: prompt }] }],
@@ -193,7 +216,7 @@ Return a JSON array of exactly 5 objects. ${includeLine} Search for each size (e
 
   const out: { results: FrameSearchResult[]; prompt: string; debug?: { parsedCount: number; responsePreview: string } } =
     { results, prompt };
-  if (process.env.DEBUG === 'true' && results.length < 5) {
+  if (results.length === 0 || (process.env.DEBUG === 'true' && results.length < 5)) {
     out.debug = { parsedCount: parsed.length, responsePreview: text.slice(0, 500) };
   }
   return out;
