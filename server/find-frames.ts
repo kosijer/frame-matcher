@@ -24,6 +24,12 @@ export interface FindFramesParams {
   /** Optional: default photo/image size in mm – if provided, suggest frames where this would fit (e.g. with mat) */
   defaultImageWidth?: number;
   defaultImageHeight?: number;
+  /** Optional: also search eBay UK (default false = Amazon only) */
+  includeEbay?: boolean;
+  /** Optional: also search Etsy UK */
+  includeEtsy?: boolean;
+  /** Optional: also search AliExpress UK */
+  includeAliExpress?: boolean;
 }
 
 export interface FindFramesResponse {
@@ -42,6 +48,9 @@ export async function findFrames(
     matOpeningHeight,
     defaultImageWidth,
     defaultImageHeight,
+    includeEbay = false,
+    includeEtsy = false,
+    includeAliExpress = false,
   } = params;
 
   // Ignore orientation: use canonical (smaller × larger) so 458×324 and 324×458 produce the same search.
@@ -106,11 +115,28 @@ export async function findFrames(
       ? ` You must include at least one frame that matches the image size (${defaultImageWidth}×${defaultImageHeight} mm)—search for "A4 frame" or "${imgSmall}x${imgLarge} cm frame" (or the equivalent for this image size) and add one result.`
       : '';
 
-  const prompt = `Find 5 picture frames on eBay UK and Amazon UK. User: frame ${targetFrameDesc}.${imageDesc}
+  const sources: string[] = ['Amazon UK'];
+  if (includeEbay) sources.push('eBay UK');
+  if (includeEtsy) sources.push('Etsy UK');
+  if (includeAliExpress) sources.push('AliExpress UK');
+  const sourcesLine = sources.join(', ');
+  const searchInstruction =
+    sources.length === 1
+      ? `Search Amazon UK only. Get all 5 results from amazon.co.uk (search e.g. "${cmSmall}x${cmLarge} cm frame" or "A3 frame" on amazon.co.uk).`
+      : `Search ${sourcesLine}. Prefer Amazon: include at least 3 products from amazon.co.uk when you find matching sizes. Then add results from ${sources.slice(1).join(' and ')} to reach 5 total.`;
 
-Return a JSON array of exactly 5 objects. ${includeLine}${imageSizeRequirement} Search both eBay UK and Amazon UK; include at least one product from Amazon if you find a matching size (e.g. search "${cmSmall}x${cmLarge} cm frame" on amazon.co.uk). Search for each size (e.g. ${searchExamples}).
+  const urlInstructions: string[] = ['Amazon: https://www.amazon.co.uk/dp/ASIN or /gp/product/...'];
+  if (includeEbay) urlInstructions.push('eBay: https://www.ebay.co.uk/itm/ then the listing id (8–12 digits)');
+  if (includeEtsy) urlInstructions.push('Etsy: https://www.etsy.com/uk/listing/... or etsy.com/listing/...');
+  if (includeAliExpress) urlInstructions.push('AliExpress: https://www.aliexpress.com/item/... or uk.aliexpress.com/item/...');
 
-CRITICAL – each url must be the full product page URL from the listing you found. eBay: copy the full URL (e.g. https://www.ebay.co.uk/itm/123456789012 — use the real 8–12 digit id from that listing, not 123456789012). Amazon: copy the full URL (https://www.amazon.co.uk/dp/ASIN or /gp/product/...). Do not use redirect URLs (vertexaisearch, grounding-api-redirect, google.com). Every url must be a different real listing.
+  const prompt = `Find 5 picture frames. User: frame ${targetFrameDesc}.${imageDesc}
+
+${searchInstruction}
+
+Return a JSON array of exactly 5 objects. ${includeLine}${imageSizeRequirement} Search for each size (e.g. ${searchExamples}).
+
+CRITICAL – each url must be a full product page URL from one of these sites only: ${sourcesLine}. ${urlInstructions.join('. ')} Do not use redirect URLs (vertexaisearch, grounding-api-redirect, google.com). Every url must be a different real listing.
 
 Each object: "title", "url", "reason", "widthMm", "heightMm". Reply with only the JSON array, no other text.`;
 
@@ -196,15 +222,15 @@ Each object: "title", "url", "reason", "widthMm", "heightMm". Reply with only th
     return out.slice(0, 5);
   };
 
-  let results = buildResults((url) => isProductPageUrl(url, 8));
+  const urlValidator = (minEbayDigits = 8) => (url: string) =>
+    isProductPageUrlForSources(url, { amazon: true, ebay: includeEbay, etsy: includeEtsy, aliexpress: includeAliExpress }, minEbayDigits);
+
+  let results = buildResults(urlValidator(8));
   if (results.length === 0 && parsed.length > 0) {
-    results = buildResults((url) => isProductPageUrl(url, 6));
+    results = buildResults(urlValidator(6), { skipGenericFilter: true });
   }
   if (results.length === 0 && parsed.length > 0) {
-    results = buildResults((url) => isProductPageUrl(url, 6), { skipGenericFilter: true });
-  }
-  if (results.length === 0 && parsed.length > 0) {
-    results = buildResults((url) => isProductPageUrl(url, 6), {
+    results = buildResults(urlValidator(6), {
       skipGenericFilter: true,
       skipPhotoSizeFilter: true,
     });
@@ -214,12 +240,51 @@ Each object: "title", "url", "reason", "widthMm", "heightMm". Reply with only th
     results = prioritizeBySizeBands(results, canonicalWidth, canonicalHeight, photoMin, photoMax);
   }
 
+  if (results.length > 0) {
+    results = results.map((r) => ({
+      ...r,
+      reason: getSizeReason(r, canonicalWidth, canonicalHeight, photoMin, photoMax),
+    }));
+  }
+
   const out: { results: FrameSearchResult[]; prompt: string; debug?: { parsedCount: number; responsePreview: string } } =
     { results, prompt };
   if (results.length === 0 || (process.env.DEBUG === 'true' && results.length < 5)) {
     out.debug = { parsedCount: parsed.length, responsePreview: text.slice(0, 500) };
   }
   return out;
+}
+
+/**
+ * Return an accurate size-band reason from dimensions so the UI shows correct labels
+ * even when the model mislabels (e.g. "between" for something that is bigger than frame).
+ */
+function getSizeReason(
+  r: FrameSearchResult,
+  frameSmall: number,
+  frameLarge: number,
+  photoMin: number | null,
+  photoMax: number | null
+): string {
+  const w = r.widthMm ?? 0;
+  const h = r.heightMm ?? 0;
+  if (w <= 0 || h <= 0) return r.reason;
+  const small = Math.min(w, h);
+  const large = Math.max(w, h);
+  const sizeStr = `${small}×${large} mm`;
+  if (photoMin != null && photoMax != null) {
+    if (small === photoMin && large === photoMax) return `Image size (${sizeStr}).`;
+    if (small === frameSmall && large === frameLarge) return `Frame size (${sizeStr}).`;
+    if (small > photoMin && large > photoMax && small < frameSmall && large < frameLarge)
+      return `Between image and frame (${sizeStr}).`;
+    if (small >= frameSmall && large >= frameLarge && (small > frameSmall || large > frameLarge))
+      return `Larger than frame (${sizeStr}).`;
+  } else {
+    if (small === frameSmall && large === frameLarge) return `Frame size (${sizeStr}).`;
+    if (small >= frameSmall && large >= frameLarge && (small > frameSmall || large > frameLarge))
+      return `Larger than frame (${sizeStr}).`;
+  }
+  return r.reason;
 }
 
 /**
@@ -294,6 +359,37 @@ function isProductPageUrl(url: string, minDigits: number = 8): boolean {
       return digitsOnly.length >= minDigits && /^\d+$/.test(digitsOnly);
     }
     if (host.includes('amazon.co.uk')) return path.includes('/dp/') || path.includes('/gp/product/');
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/** Allow product pages only from enabled sources. */
+function isProductPageUrlForSources(
+  url: string,
+  sources: { amazon: boolean; ebay: boolean; etsy: boolean; aliexpress: boolean },
+  minEbayDigits = 8
+): boolean {
+  if (!url.startsWith('http')) return false;
+  try {
+    const u = new URL(url);
+    const host = u.hostname.toLowerCase();
+    const path = u.pathname;
+    if (sources.amazon && host.includes('amazon.co.uk'))
+      return path.includes('/dp/') || path.includes('/gp/product/');
+    if (sources.ebay && host.includes('ebay.co.uk')) {
+      const itmMatch = path.match(/\/itm\/([^/?]+)/i);
+      if (!itmMatch) return false;
+      const digitsOnly = itmMatch[1].replace(/\D/g, '');
+      return digitsOnly.length >= minEbayDigits && /^\d+$/.test(digitsOnly);
+    }
+    if (sources.etsy && (host.includes('etsy.com'))) {
+      return /\/listing\/\d+/.test(path);
+    }
+    if (sources.aliexpress && (host.includes('aliexpress.com'))) {
+      return /\/item\/[^/]+\.html/.test(path) || path.includes('/item/');
+    }
     return false;
   } catch {
     return false;

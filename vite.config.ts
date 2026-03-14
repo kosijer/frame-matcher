@@ -62,6 +62,9 @@ export default defineConfig(({ mode }) => {
                 ...(typeof payload.matOpeningHeight === 'number' && payload.matOpeningHeight > 0 && { matOpeningHeight: payload.matOpeningHeight }),
                 ...(typeof payload.defaultImageWidth === 'number' && payload.defaultImageWidth > 0 && { defaultImageWidth: payload.defaultImageWidth }),
                 ...(typeof payload.defaultImageHeight === 'number' && payload.defaultImageHeight > 0 && { defaultImageHeight: payload.defaultImageHeight }),
+                ...(payload.includeEbay === true && { includeEbay: true }),
+                ...(payload.includeEtsy === true && { includeEtsy: true }),
+                ...(payload.includeAliExpress === true && { includeAliExpress: true }),
               }
               const data = await findFrames(params, apiKey)
               res.setHeader('Content-Type', 'application/json')

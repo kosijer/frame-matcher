@@ -41,8 +41,8 @@ Return **up to 5 results** by covering these bands. **At most one result per ban
 
 ## Output
 
-- **Source:** eBay UK and Amazon UK only.
-- **Format:** Each result must be a real product page (URL with valid eBay item id or Amazon ASIN).
+- **Source:** By default, **Amazon UK only**. The user can optionally enable **eBay UK**, **Etsy UK**, and **AliExpress UK** via toggles; only enabled sources are searched and returned.
+- **Format:** Each result must be a real product page (URL valid for the enabled source).
 - **Content:** title, url, reason (why it fits the scenario), widthMm, heightMm.
 
 ## Debug

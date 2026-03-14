@@ -14,6 +14,12 @@ export interface FindFramesPayload {
   matOpeningHeight?: number;
   defaultImageWidth?: number;
   defaultImageHeight?: number;
+  /** Include eBay UK results (default: Amazon only) */
+  includeEbay?: boolean;
+  /** Include Etsy UK results */
+  includeEtsy?: boolean;
+  /** Include AliExpress UK results */
+  includeAliExpress?: boolean;
 }
 
 export interface FindFramesApiResponse {
