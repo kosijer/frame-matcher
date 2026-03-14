@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { FrameControls } from './components/FrameControls';
 import { FramePreview } from './components/FramePreview';
+import { FrameSearch } from './components/FrameSearch';
+import { FrameSearchDebugPanel } from './components/FrameSearchDebugPanel';
 import { LayoutInfo } from './components/LayoutInfo';
 import { useFrameStore } from './store/useFrameStore';
 
@@ -23,8 +25,10 @@ function App() {
         <section className="min-w-0 flex-1">
           <FramePreview />
           <LayoutInfo />
+          <FrameSearch />
         </section>
       </main>
+      {import.meta.env.VITE_DEBUG === 'true' && <FrameSearchDebugPanel />}
     </div>
   );
 }

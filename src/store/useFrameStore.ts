@@ -76,7 +76,7 @@ export const useFrameStore = create<FrameState & FrameActions>((set, get) => ({
   frameThickness: DEFAULT_FRAME_THICKNESS,
   frameWidth: DEFAULT_FRAME_WIDTH,
   frameHeight: DEFAULT_FRAME_HEIGHT,
-  matEnabled: true,
+  matEnabled: false,
   matOpeningWidth: DEFAULT_MAT_OPENING_WIDTH,
   matOpeningHeight: DEFAULT_MAT_OPENING_HEIGHT,
   frameColor: '#1a1a1a',

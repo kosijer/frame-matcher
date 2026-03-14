@@ -13,6 +13,7 @@ A web app to **simulate how photos or artwork fit inside picture frames** with o
 - **Preview image** — In the double-click modal you can upload an image to show inside that placeholder. It is only for preview and is not stored permanently.
 - **Spacing guides** — Enable “Show spacing guides” and hover between two images in the preview to see the gap size in mm.
 - **Unit converter** — Convert mm to inches and back in the side panel.
+- **Find matching frames** — Uses the Gemini API with Google Search grounding to find the top 3 closest-matching picture frames on eBay UK and Amazon UK from the current frame dimensions. Results appear in a section below the main planner. For non-standard sizes, the model suggests the nearest commonly available frame size.
 
 ## Tech stack
 
@@ -30,6 +31,27 @@ npm run dev
 ```
 
 Open the URL shown (e.g. `http://localhost:5173`).
+
+### Frame search (eBay & Amazon UK)
+
+The “Find matching frames” feature calls the Gemini API with Google Search grounding. To enable it:
+
+1. Get a [Gemini API key](https://ai.google.dev/gemini-api/docs).
+2. Set it when starting the dev server:
+
+   ```bash
+   GEMINI_API_KEY=your_key npm run dev
+   ```
+
+   Or create a `.env` file in the project root with:
+
+   ```
+   GEMINI_API_KEY=your_key
+   ```
+
+   (Vite loads `.env` into `process.env` for the server.)
+
+The API runs as Vite dev middleware; it is only available during `npm run dev`. For production you would need a separate backend or serverless function that exposes `POST /api/find-frames` with the same request/response shape.
 
 ## Build
 
