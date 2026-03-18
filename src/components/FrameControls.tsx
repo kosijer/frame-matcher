@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Minus,
   Plus,
@@ -9,6 +9,7 @@ import {
   Ruler,
 } from 'lucide-react';
 import { useFrameStore } from '../store/useFrameStore';
+import { inchesToMm, mmToInches } from '../utils/conversions';
 import { SizeSelector } from './SizeSelector';
 import { ColorPicker } from './ColorPicker';
 import { UnitConverter } from './UnitConverter';
@@ -16,6 +17,37 @@ import { HelpTooltip } from './HelpTooltip';
 import { Modal } from './Modal';
 
 const MAX_FRAME_THICKNESS = 80;
+type Unit = 'mm' | 'in';
+
+function UnitSwitch({ value, onChange }: { value: Unit; onChange: (v: Unit) => void }) {
+  const base =
+    'inline-flex items-center rounded-md border border-border bg-card p-0.5 text-xs shadow-sm';
+  const item =
+    'px-2 py-1 rounded-[0.4rem] transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background';
+  const active = 'bg-primary text-primary-foreground';
+  const inactive = 'text-muted-foreground hover:bg-accent hover:text-accent-foreground';
+
+  return (
+    <div className={base} role="group" aria-label="Unit selector">
+      <button
+        type="button"
+        onClick={() => onChange('mm')}
+        className={`${item} ${value === 'mm' ? active : inactive}`}
+        aria-pressed={value === 'mm'}
+      >
+        mm
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('in')}
+        className={`${item} ${value === 'in' ? active : inactive}`}
+        aria-pressed={value === 'in'}
+      >
+        in
+      </button>
+    </div>
+  );
+}
 
 export function FrameControls() {
   const frameWidth = useFrameStore((s) => s.frameWidth);
@@ -53,6 +85,9 @@ export function FrameControls() {
   const rotateImageSize = useFrameStore((s) => s.rotateImageSize);
 
   const [unitConverterOpen, setUnitConverterOpen] = useState(false);
+  const [frameUnit, setFrameUnit] = useState<Unit>('mm');
+  const [matUnit, setMatUnit] = useState<Unit>('mm');
+  const [photoUnit, setPhotoUnit] = useState<Unit>('mm');
 
   const containerWidth = matEnabled ? matOpeningWidth : frameWidth;
   const containerHeight = matEnabled ? matOpeningHeight : frameHeight;
@@ -75,6 +110,27 @@ export function FrameControls() {
     'flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2';
   const toggleActiveClass = 'border-primary bg-primary/10 text-primary';
 
+  const fmtAlt = useMemo(() => {
+    const fmtIn = (mm: number) => {
+      const v = mmToInches(mm);
+      const rounded = Math.round(v * 100) / 100;
+      return `${rounded} in`;
+    };
+    const fmtMm = (inch: number) => {
+      const v = inchesToMm(inch);
+      const rounded = Math.round(v * 10) / 10;
+      return `${rounded} mm`;
+    };
+    return { fmtIn, fmtMm };
+  }, []);
+
+  const toDisplay = (mm: number, unit: Unit) =>
+    unit === 'mm' ? mm : Math.round(mmToInches(mm) * 10000) / 10000;
+  const fromDisplay = (v: number, unit: Unit) => (unit === 'mm' ? v : inchesToMm(v));
+  const stepFor = (unit: Unit) => (unit === 'mm' ? 1 : 0.01);
+  const minFor = (mmMin: number, unit: Unit) =>
+    unit === 'mm' ? mmMin : Math.round(mmToInches(mmMin) * 10000) / 10000;
+
   return (
     <>
       <div className="flex h-full flex-col gap-5 overflow-y-auto rounded-xl border border-border bg-card p-5 shadow-sm">
@@ -93,29 +149,46 @@ export function FrameControls() {
         {/* Frame */}
         <section className="space-y-3">
           <div className={sectionTitleClass}>
-            Frame
+            <span>Frame</span>
             <HelpTooltip content="Opening is the visible inner size; the frame border extends outward by the thickness. Use the rotate icon to switch portrait/landscape." />
+            <span className="ml-auto">
+              <UnitSwitch value={frameUnit} onChange={setFrameUnit} />
+            </span>
           </div>
         <SizeSelector />
         <div className="flex items-end gap-2">
           <div className="grid flex-1 grid-cols-2 gap-2">
             <div>
-              <label className={labelClass}>Opening width (mm)</label>
+              <label className={labelClass}>
+                Opening width ({frameUnit}) / {frameUnit === 'mm' ? fmtAlt.fmtIn(frameWidth) : fmtAlt.fmtMm(mmToInches(frameWidth))}
+              </label>
               <input
                 type="number"
-                value={frameWidth}
-                onChange={(e) => setFrameSize(Number(e.target.value), frameHeight)}
-                min={10}
+                value={toDisplay(frameWidth, frameUnit)}
+                onChange={(e) => {
+                  const n = parseFloat(e.target.value);
+                  if (!Number.isFinite(n)) return;
+                  setFrameSize(fromDisplay(n, frameUnit), frameHeight);
+                }}
+                min={minFor(10, frameUnit)}
+                step={stepFor(frameUnit)}
                 className={inputClass}
               />
             </div>
             <div>
-              <label className={labelClass}>Opening height (mm)</label>
+              <label className={labelClass}>
+                Opening height ({frameUnit}) / {frameUnit === 'mm' ? fmtAlt.fmtIn(frameHeight) : fmtAlt.fmtMm(mmToInches(frameHeight))}
+              </label>
               <input
                 type="number"
-                value={frameHeight}
-                onChange={(e) => setFrameSize(frameWidth, Number(e.target.value))}
-                min={10}
+                value={toDisplay(frameHeight, frameUnit)}
+                onChange={(e) => {
+                  const n = parseFloat(e.target.value);
+                  if (!Number.isFinite(n)) return;
+                  setFrameSize(frameWidth, fromDisplay(n, frameUnit));
+                }}
+                min={minFor(10, frameUnit)}
+                step={stepFor(frameUnit)}
                 className={inputClass}
               />
             </div>
@@ -125,13 +198,21 @@ export function FrameControls() {
           </button>
         </div>
         <div>
-          <label className={labelClass}>Frame thickness (mm, max {Math.floor(maxThickness)})</label>
+          <label className={labelClass}>
+            Frame thickness ({frameUnit}, max {frameUnit === 'mm' ? Math.floor(maxThickness) : Math.round(mmToInches(maxThickness) * 100) / 100})
+            {frameUnit === 'mm' ? ` / ${fmtAlt.fmtIn(frameThickness)}` : ` / ${fmtAlt.fmtMm(mmToInches(frameThickness))}`}
+          </label>
           <input
             type="number"
-            value={frameThickness}
-            onChange={(e) => setFrameThickness(Number(e.target.value))}
-            min={1}
-            max={Math.max(1, Math.floor(maxThickness))}
+            value={toDisplay(frameThickness, frameUnit)}
+            onChange={(e) => {
+              const n = parseFloat(e.target.value);
+              if (!Number.isFinite(n)) return;
+              setFrameThickness(fromDisplay(n, frameUnit));
+            }}
+            min={minFor(1, frameUnit)}
+            max={frameUnit === 'mm' ? Math.floor(maxThickness) : Math.round(mmToInches(maxThickness) * 100) / 100}
+            step={stepFor(frameUnit)}
             className={inputClass}
           />
         </div>
@@ -143,9 +224,12 @@ export function FrameControls() {
         {/* Mat board */}
         <section className="space-y-3 border-t border-border pt-4">
           <div className={sectionTitleClass}>
-            Mat board (passe-partout)
-          <HelpTooltip content="The mat creates a border between the frame and the images. Mat opening is the visible area where photos sit." />
-        </div>
+            <span>Mat board (passe-partout)</span>
+            <HelpTooltip content="The mat creates a border between the frame and the images. Mat opening is the visible area where photos sit." />
+            <span className="ml-auto">
+              <UnitSwitch value={matUnit} onChange={setMatUnit} />
+            </span>
+          </div>
         <label className="flex cursor-pointer items-center gap-2">
           <input
             type="checkbox"
@@ -159,22 +243,36 @@ export function FrameControls() {
           <>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className={labelClass}>Mat opening W (mm)</label>
+                <label className={labelClass}>
+                  Mat opening W ({matUnit}) / {matUnit === 'mm' ? fmtAlt.fmtIn(matOpeningWidth) : fmtAlt.fmtMm(mmToInches(matOpeningWidth))}
+                </label>
                 <input
                   type="number"
-                  value={matOpeningWidth}
-                  onChange={(e) => setMatOpening(Number(e.target.value), matOpeningHeight)}
-                  min={1}
+                  value={toDisplay(matOpeningWidth, matUnit)}
+                  onChange={(e) => {
+                    const n = parseFloat(e.target.value);
+                    if (!Number.isFinite(n)) return;
+                    setMatOpening(fromDisplay(n, matUnit), matOpeningHeight);
+                  }}
+                  min={minFor(1, matUnit)}
+                  step={stepFor(matUnit)}
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className={labelClass}>Mat opening H (mm)</label>
+                <label className={labelClass}>
+                  Mat opening H ({matUnit}) / {matUnit === 'mm' ? fmtAlt.fmtIn(matOpeningHeight) : fmtAlt.fmtMm(mmToInches(matOpeningHeight))}
+                </label>
                 <input
                   type="number"
-                  value={matOpeningHeight}
-                  onChange={(e) => setMatOpening(matOpeningWidth, Number(e.target.value))}
-                  min={1}
+                  value={toDisplay(matOpeningHeight, matUnit)}
+                  onChange={(e) => {
+                    const n = parseFloat(e.target.value);
+                    if (!Number.isFinite(n)) return;
+                    setMatOpening(matOpeningWidth, fromDisplay(n, matUnit));
+                  }}
+                  min={minFor(1, matUnit)}
+                  step={stepFor(matUnit)}
                   className={inputClass}
                 />
               </div>
@@ -189,28 +287,45 @@ export function FrameControls() {
         {/* Images */}
         <section className="space-y-3 border-t border-border pt-4">
           <div className={sectionTitleClass}>
-            Images
-          <HelpTooltip content="Default size for each photo. With one image, changing size in the preview (double-click) updates these fields. Add more images; spacing is computed automatically." />
-        </div>
+            <span>Photos</span>
+            <HelpTooltip content="Default size for each photo. With one image, changing size in the preview (double-click) updates these fields. Add more photos; spacing is computed automatically." />
+            <span className="ml-auto">
+              <UnitSwitch value={photoUnit} onChange={setPhotoUnit} />
+            </span>
+          </div>
         <div className="flex items-end gap-2">
           <div className="grid flex-1 grid-cols-2 gap-2">
             <div>
-              <label className={labelClass}>Photo width (mm)</label>
+              <label className={labelClass}>
+                Photo width ({photoUnit}) / {photoUnit === 'mm' ? fmtAlt.fmtIn(defaultImageWidth) : fmtAlt.fmtMm(mmToInches(defaultImageWidth))}
+              </label>
               <input
                 type="number"
-                value={defaultImageWidth}
-                onChange={(e) => setDefaultImageSize(Number(e.target.value), defaultImageHeight)}
-                min={1}
+                value={toDisplay(defaultImageWidth, photoUnit)}
+                onChange={(e) => {
+                  const n = parseFloat(e.target.value);
+                  if (!Number.isFinite(n)) return;
+                  setDefaultImageSize(fromDisplay(n, photoUnit), defaultImageHeight);
+                }}
+                min={minFor(1, photoUnit)}
+                step={stepFor(photoUnit)}
                 className={inputClass}
               />
             </div>
             <div>
-              <label className={labelClass}>Photo height (mm)</label>
+              <label className={labelClass}>
+                Photo height ({photoUnit}) / {photoUnit === 'mm' ? fmtAlt.fmtIn(defaultImageHeight) : fmtAlt.fmtMm(mmToInches(defaultImageHeight))}
+              </label>
               <input
                 type="number"
-                value={defaultImageHeight}
-                onChange={(e) => setDefaultImageSize(defaultImageWidth, Number(e.target.value))}
-                min={1}
+                value={toDisplay(defaultImageHeight, photoUnit)}
+                onChange={(e) => {
+                  const n = parseFloat(e.target.value);
+                  if (!Number.isFinite(n)) return;
+                  setDefaultImageSize(defaultImageWidth, fromDisplay(n, photoUnit));
+                }}
+                min={minFor(1, photoUnit)}
+                step={stepFor(photoUnit)}
                 className={inputClass}
               />
             </div>
